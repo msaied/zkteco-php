@@ -1,0 +1,53 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "msaied/zkteco",
+    "description": "A PHP client for ZKTeco biometric attendance devices — a port of pyzk, with an optional Laravel bridge.",
+    "type": "library",
+    "keywords": [
+        "zkteco",
+        "biometric",
+        "attendance",
+        "fingerprint",
+        "time-clock",
+        "pyzk",
+        "laravel"
+    ],
+    "license": "MIT",
+    "require": {
+        "php": "^8.3"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.27",
+        "mockery/mockery": "^1.6",
+        "orchestra/testbench": "^11.0",
+        "pestphp/pest": "^4.7"
+    },
+    "suggest": {
+        "illuminate/support": "Enables the Laravel bridge: auto-discovered service provider, facade, config, and the zkteco:listen command (^11.0 || ^12.0 || ^13.0)."
+    },
+    "autoload": {
+        "psr-4": {
+            "ZkTeco\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ZkTeco\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "ZkTeco\\Laravel\\ZkTecoServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

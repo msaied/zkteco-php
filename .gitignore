@@ -1,0 +1,20 @@
+/vendor/
+/.phpunit.cache/
+.phpunit.result.cache
+.DS_Store
+Thumbs.db
+/.idea
+/.vscode
+/.zed
+composer.lock
+/examples/adms-demo.sqlite
+
+# Local AI-assistant & dev-tooling config (not part of the package)
+/.agents
+/.claude
+/.codex
+/.mcp.json
+/opencode.json
+/boost.json
+/AGENTS.md
+/CLAUDE.md
