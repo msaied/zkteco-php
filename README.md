@@ -1,5 +1,11 @@
 # zkteco
 
+![Packagist Version](https://img.shields.io/packagist/v/msaied/zkteco)
+![Packagist Downloads](https://img.shields.io/packagist/dt/msaied/zkteco)
+![PHP Version](https://img.shields.io/packagist/dependency-v/msaied/zkteco/php)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/msaied/zkteco-php/ci.yml)
+![GitHub License](https://img.shields.io/github/license/msaied/zkteco-php)
+
 A PHP client for **ZKTeco** biometric attendance devices, with an optional,
 auto-discovered Laravel bridge. It speaks both directions of the wire:
 
