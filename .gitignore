@@ -9,6 +9,9 @@ Thumbs.db
 composer.lock
 /examples/adms-demo.sqlite
 
+# Documentation kept locally but not version-controlled
+/docs/
+
 # Local AI-assistant & dev-tooling config (not part of the package)
 /.agents
 /.claude

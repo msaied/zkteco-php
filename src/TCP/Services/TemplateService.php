@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ZkTeco\TCP\Services;
 
+use Closure;
 use Throwable;
 use ZkTeco\Exceptions\ErrorCode;
 use ZkTeco\Exceptions\NetworkException;
@@ -163,24 +164,45 @@ final class TemplateService
      * @param  int  $fingerIndex  finger slot to store the capture in (0-9, e.g.
      *                            6 = right index; see {@see Template} for the
      *                            full finger map)
+     * @param  Closure(string, array<string, mixed>): void|null  $trace  an
+     *                                                                   optional diagnostic hook called with
+     *                                                                   `($event, $context)` at each step of the
+     *                                                                   handshake (the StartEnroll payload and reply,
+     *                                                                   every event packet, the completion, and the
+     *                                                                   trailing records drained afterwards). The
+     *                                                                   enroll wire format is firmware-specific and
+     *                                                                   verified only on real hardware (ADR-0005), so
+     *                                                                   this lets a caller record exactly what an
+     *                                                                   unvalidated terminal returns when a capture
+     *                                                                   fails, rather than guess.
      *
      * @throws ResponseException when the device refuses to start enrollment.
      */
-    public function enroll(User $user, int $fingerIndex = 0): bool
+    public function enroll(User $user, int $fingerIndex = 0, ?Closure $trace = null): bool
     {
         $this->cancelCapture();
 
-        $start = $this->session->command(
-            Command::StartEnroll,
-            str_pad(substr($user->userId, 0, 24), 24, "\0").pack('c', $fingerIndex).pack('c', 1),
-        );
+        $payload = str_pad(substr($user->userId, 0, 24), 24, "\0").pack('c', $fingerIndex).pack('c', 1);
+
+        $trace?->__invoke('start_enroll.send', [
+            'finger_index' => $fingerIndex,
+            'bytes' => strlen($payload),
+            'hex' => bin2hex($payload),
+        ]);
+
+        $start = $this->session->command(Command::StartEnroll, $payload);
+
+        $trace?->__invoke('start_enroll.reply', [
+            'command' => $start->command,
+            'ok' => $start->isOk(),
+        ]);
 
         if (! $start->isOk()) {
             throw ResponseException::commandRejected(Command::StartEnroll->value);
         }
 
         try {
-            return $this->awaitEnrollment();
+            return $this->awaitEnrollment($trace);
         } finally {
             $this->teardownCapture();
         }
@@ -191,13 +213,22 @@ final class TemplateService
      * acknowledging each one. Short progress pings are skipped; the completion
      * record's result and template-size fields decide success. A read timeout
      * means the person never finished, so the capture failed.
+     *
+     * @param  Closure(string, array<string, mixed>): void|null  $trace  see {@see enroll()}
      */
-    private function awaitEnrollment(): bool
+    private function awaitEnrollment(?Closure $trace = null): bool
     {
         try {
             for ($event = 0; $event < self::MAX_ENROLL_EVENTS; $event++) {
                 $packet = $this->session->nextPacket();
                 $this->session->acknowledge();
+
+                $trace?->__invoke('enroll.event', [
+                    'index' => $event,
+                    'command' => $packet->command,
+                    'bytes' => strlen($packet->payload),
+                    'hex' => bin2hex($packet->payload),
+                ]);
 
                 if (strlen($packet->payload) < self::ENROLL_RESULT_MIN_BYTES) {
                     continue;
@@ -208,16 +239,26 @@ final class TemplateService
 
                 $done = $record['result'] === self::RES_DONE && $record['size'] > 0;
 
+                $trace?->__invoke('enroll.completion', [
+                    'result' => $record['result'],
+                    'size' => $record['size'],
+                    'done' => $done,
+                ]);
+
                 // The device repeats the completion record; clear it (and any
                 // trailing pings) so the next command reads its own reply.
-                $this->drainEvents();
+                $this->drainEvents($trace);
 
                 return $done;
             }
 
+            $trace?->__invoke('enroll.exhausted', ['events' => self::MAX_ENROLL_EVENTS]);
+
             return false;
         } catch (NetworkException $exception) {
             if ($exception->errorCode === ErrorCode::Timeout) {
+                $trace?->__invoke('enroll.timeout', []);
+
                 return false;
             }
 
@@ -228,16 +269,24 @@ final class TemplateService
     /**
      * Consume any pending events left in the socket after a completed
      * enrollment, using a short timeout, then restore the original.
+     *
+     * @param  Closure(string, array<string, mixed>): void|null  $trace  see {@see enroll()}
      */
-    private function drainEvents(): void
+    private function drainEvents(?Closure $trace = null): void
     {
         $original = $this->session->readTimeout();
         $this->session->setReadTimeout(self::DRAIN_TIMEOUT);
 
         try {
             while (true) {
-                $this->session->nextPacket();
+                $packet = $this->session->nextPacket();
                 $this->session->acknowledge();
+
+                $trace?->__invoke('enroll.drain', [
+                    'command' => $packet->command,
+                    'bytes' => strlen($packet->payload),
+                    'hex' => bin2hex($packet->payload),
+                ]);
             }
         } catch (NetworkException) {
             // No more pending events (timeout or close): the socket is clean.

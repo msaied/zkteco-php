@@ -214,6 +214,20 @@ try {
 }
 ```
 
+Because the enroll event stream is **firmware-specific** (see
+[Tested hardware](#tested-hardware)), `enroll()` accepts an optional `$trace`
+closure — `fn (string $event, array $context)` — invoked at each step of the
+handshake: the `CMD_STARTENROLL` payload and reply, every event packet (with its
+raw hex), the parsed completion, and the trailing records drained afterwards. On
+a terminal whose firmware differs from the verified one, pass it to record
+exactly what the device returns instead of guessing:
+
+```php
+$device->templates()->enroll($user, fingerIndex: 6, trace: function (string $event, array $context) {
+    logger()->debug("enroll: {$event}", $context);
+});
+```
+
 The `fingerIndex` (`0`–`9`) is the device's finger slot, used by `enroll()`,
 `delete()` and `Template`. It runs from the left pinky across to the right
 pinky, with the thumbs meeting in the middle — matching the device's on-screen
@@ -734,6 +748,33 @@ interactive fingerprint capture via `CMD_STARTENROLL`.
 
 A gated integration suite exercises all of the above against real hardware —
 see [Testing](#testing).
+
+### Compatibility notes
+
+The package targets the **generic ZK protocol**, not one firmware build, so
+other ZKTeco terminals are expected to interoperate. The following newer build
+has been checked at the protocol level but has **not** yet had a full end-to-end
+hardware run, so it is listed separately from the verified unit above:
+
+| Property     | Value                          |
+| ------------ | ------------------------------ |
+| Model        | **MB2000**                     |
+| Firmware     | **Ver 8.0.4.5-20200729**       |
+| Push Service | **Ver 2.0.30S** (ADMS PushV2)  |
+
+What this implies per path:
+
+- **Socket read/write/clock/control/realtime** — same model as the verified
+  unit, over the same generic ZK6 wire format; expected to work unchanged.
+- **Fingerprint `enroll()`** — the event stream was only ever observed on the
+  6.60 unit, so it is unconfirmed here. Use the `$trace` hook (see
+  [enrollment](#templates--fingerprint-enrollment)) to capture the real sequence
+  before relying on it.
+- **ADMS push (Push Service 2.0.30S)** — the device's `pushver` resolves to the
+  **PushV2** generation, so it is served by the full PUSH-SDK *read* path
+  (attendance, photos, biometric templates, user syncs, audit logs). The
+  outbound command and config/registry layouts remain provisional (see
+  [Limitations](#limitations)).
 
 ## Limitations
 

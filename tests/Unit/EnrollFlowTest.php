@@ -166,6 +166,70 @@ it('returns false when the person never completes the scans', function () {
         ->toBeFalse();
 });
 
+it('reports each step to the diagnostic trace hook', function () {
+    $transport = enrollTransport([
+        responsePacket(Command::AckOk, sessionId: 1),  // connect
+        responsePacket(Command::AckOk, sessionId: 1),  // cancel capture
+        responsePacket(Command::AckOk, sessionId: 1),  // start enroll
+        enrollEvent("\x44"),                           // scan progress ping
+        enrollCompletion(result: 0, size: 926),        // capture complete
+        enrollCompletion(result: 0, size: 926),        // repeated completion, drained
+        null,                                          // drain: no more events
+        responsePacket(Command::AckOk, sessionId: 1),  // teardown: clear events
+        responsePacket(Command::AckOk, sessionId: 1),  // teardown: cancel capture
+        responsePacket(Command::AckOk, sessionId: 1),  // teardown: verify mode
+    ]);
+
+    $events = [];
+    $trace = function (string $event, array $context) use (&$events): void {
+        $events[] = [$event, $context];
+    };
+
+    $done = (new TemplateService(enrollSession($transport)))
+        ->enroll(new User(uid: 7, userId: '99399', name: 'Bob'), fingerIndex: 6, trace: $trace);
+
+    expect($done)->toBeTrue();
+
+    $names = array_column($events, 0);
+    expect($names)->toBe([
+        'start_enroll.send',
+        'start_enroll.reply',
+        'enroll.event',   // progress ping
+        'enroll.event',   // completion record
+        'enroll.completion',
+        'enroll.drain',   // repeated completion record
+    ]);
+
+    $context = array_column($events, 1, 0);
+    expect($context['start_enroll.send']['finger_index'])->toBe(6)
+        ->and($context['start_enroll.send']['hex'])->toBe(bin2hex(str_pad('99399', 24, "\0").pack('c', 6).pack('c', 1)))
+        ->and($context['start_enroll.reply']['ok'])->toBeTrue()
+        ->and($context['enroll.completion'])->toMatchArray(['result' => 0, 'size' => 926, 'done' => true])
+        ->and($context['enroll.drain']['bytes'])->toBeGreaterThanOrEqual(4);
+});
+
+it('reports a timeout to the trace hook when the person never finishes', function () {
+    $transport = enrollTransport([
+        responsePacket(Command::AckOk, sessionId: 1),  // connect
+        responsePacket(Command::AckOk, sessionId: 1),  // cancel capture
+        responsePacket(Command::AckOk, sessionId: 1),  // start enroll
+        null,                                          // read timeout before any event
+        responsePacket(Command::AckOk, sessionId: 1),  // teardown: clear events
+        responsePacket(Command::AckOk, sessionId: 1),  // teardown: cancel capture
+        responsePacket(Command::AckOk, sessionId: 1),  // teardown: verify mode
+    ]);
+
+    $names = [];
+    $trace = function (string $event) use (&$names): void {
+        $names[] = $event;
+    };
+
+    (new TemplateService(enrollSession($transport)))
+        ->enroll(new User(uid: 7, userId: '99399', name: 'Bob'), trace: $trace);
+
+    expect($names)->toBe(['start_enroll.send', 'start_enroll.reply', 'enroll.timeout']);
+});
+
 it('throws when the device refuses to start enrollment', function () {
     $transport = enrollTransport([
         responsePacket(Command::AckOk, sessionId: 1),    // connect
