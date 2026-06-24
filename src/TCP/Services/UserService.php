@@ -37,7 +37,7 @@ final class UserService
 
         $buffer = $this->session->readBuffer(Command::UserTempRead, self::FCT_USER);
 
-        return UserDecoder::decode($buffer, $sizes['users']);
+        return UserDecoder::decode($buffer, $sizes['users'], $this->session->nameEncoding);
     }
 
     /**
@@ -65,7 +65,7 @@ final class UserService
     public function save(User $user): void
     {
         $this->assertOk(
-            $this->session->command(Command::UserWrite, UserEncoder::encode($user)),
+            $this->session->command(Command::UserWrite, UserEncoder::encode($user, encoding: $this->session->nameEncoding)),
             Command::UserWrite,
         );
 

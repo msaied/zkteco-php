@@ -14,7 +14,8 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.3"
+        "php": "^8.3",
+        "ext-iconv": "*"
     },
     "require-dev": {
         "laravel/pint": "^1.27",

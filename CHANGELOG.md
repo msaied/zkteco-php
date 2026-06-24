@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Configurable device name codepage so non-ASCII user names (Arabic, Chinese,
+  Cyrillic, …) display correctly on the panel instead of as mojibake. Set
+  `nameEncoding` on `Device` or `name_encoding` per Laravel connection
+  (`ZKTECO_NAME_ENCODING`); defaults to `UTF-8`, preserving previous behaviour.
+  Names are now re-encoded to the device codepage on write and back to UTF-8 on
+  read. Requires `ext-iconv`.
+
+### Fixed
+
+- User names are now truncated to the device field width on whole-character
+  boundaries, so a multi-byte character is never split mid-sequence.
+
 ## [0.1.1] - 2026-06-20
 
 ### Added

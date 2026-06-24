@@ -32,9 +32,9 @@ final class TemplateEncoder
     /**
      * @param  list<Template>  $templates
      */
-    public static function encode(User $user, array $templates): string
+    public static function encode(User $user, array $templates, string $encoding = NameField::DEFAULT_ENCODING): string
     {
-        $userBlock = self::encodeUser($user);
+        $userBlock = self::encodeUser($user, $encoding);
         $table = '';
         $templateBlock = '';
         $offset = 0;
@@ -63,7 +63,7 @@ final class TemplateEncoder
      * repack73): the same fields as the 72-byte CMD_USER_WRQ record, but
      * prefixed with a 0x02 tag and with a 0x01 flag byte after the card number.
      */
-    private static function encodeUser(User $user): string
+    private static function encodeUser(User $user, string $encoding): string
     {
         $password = $user->password ?? '';
         $card = $user->cardNumber !== null ? (int) $user->cardNumber : 0;
@@ -72,7 +72,7 @@ final class TemplateEncoder
             .pack('v', $user->uid)
             .pack('C', $user->privilege->value)
             .str_pad(substr($password, 0, 8), 8, "\0")
-            .str_pad(substr($user->name, 0, 24), 24, "\0")
+            .NameField::pack($user->name, 24, $encoding)
             .pack('V', $card)
             .pack('C', 1)
             .str_pad(substr((string) $user->groupId, 0, 7), 7, "\0")

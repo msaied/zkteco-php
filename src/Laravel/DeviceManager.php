@@ -72,6 +72,7 @@ class DeviceManager
             commKey: (int) ($settings['comm_key'] ?? 0),
             timeout: (float) ($settings['timeout'] ?? 5.0),
             useUdp: (bool) ($settings['udp'] ?? false),
+            nameEncoding: (string) ($settings['name_encoding'] ?? 'UTF-8'),
         );
     }
 }

@@ -12,6 +12,7 @@ use ZkTeco\TCP\Protocol\Bytes;
 use ZkTeco\TCP\Protocol\Codec;
 use ZkTeco\TCP\Protocol\Command;
 use ZkTeco\TCP\Protocol\CommKey;
+use ZkTeco\TCP\Protocol\NameField;
 use ZkTeco\TCP\Protocol\Packet;
 
 /**
@@ -42,6 +43,12 @@ final class Session
         private readonly Transport $transport,
         private readonly Codec $codec,
         private readonly int $commKey = 0,
+        /**
+         * The device's name codepage. User names are re-encoded to this on write
+         * and back to UTF-8 on read, so non-ASCII scripts (e.g. Windows-1256 for
+         * Arabic) display correctly on the panel instead of as mojibake.
+         */
+        public readonly string $nameEncoding = NameField::DEFAULT_ENCODING,
     ) {}
 
     /**

@@ -80,6 +80,25 @@ it('round-trips a user through encode then decode (72-byte)', function () {
         ->and($decoded->groupId)->toBe(5);
 });
 
+it('round-trips an Arabic name through the device codepage', function () {
+    $user = new User(
+        uid: 3,
+        userId: '3003',
+        name: 'محمد علي',
+        privilege: Privilege::User,
+    );
+
+    $record = UserEncoder::encode($user, encoding: 'Windows-1256');
+
+    // The name field holds single-byte CP1256, not the longer UTF-8 form the
+    // device would otherwise render as garbage.
+    $nameField = substr($record, 11, 24);
+    expect(rtrim($nameField, "\0"))->toBe(iconv('UTF-8', 'Windows-1256', 'محمد علي'));
+
+    $decoded = UserDecoder::decode(pack('V', 72).$record, 1, 'Windows-1256')[0];
+    expect($decoded->name)->toBe('محمد علي');
+});
+
 it('truncates over-long fields to the layout width', function () {
     $user = new User(
         uid: 1,

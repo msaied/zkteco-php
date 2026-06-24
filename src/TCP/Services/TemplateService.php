@@ -130,7 +130,7 @@ final class TemplateService
             return;
         }
 
-        $this->session->writeBuffer(TemplateEncoder::encode($user, $templates));
+        $this->session->writeBuffer(TemplateEncoder::encode($user, $templates, $this->session->nameEncoding));
 
         $response = $this->session->command(
             Command::SaveUserTemps,

@@ -9,6 +9,7 @@ use ZkTeco\Exceptions\ConnectionException;
 use ZkTeco\TCP\Connection\Session;
 use ZkTeco\TCP\Connection\TcpTransport;
 use ZkTeco\TCP\Protocol\Codec;
+use ZkTeco\TCP\Protocol\NameField;
 use ZkTeco\TCP\Services\AttendanceService;
 use ZkTeco\TCP\Services\DeviceControlService;
 use ZkTeco\TCP\Services\DeviceInfoService;
@@ -44,6 +45,7 @@ final class Device
         public readonly int $commKey = 0,
         public readonly float $timeout = 5.0,
         public readonly bool $useUdp = false,
+        public readonly string $nameEncoding = NameField::DEFAULT_ENCODING,
         ?Session $session = null,
     ) {
         $this->session = $session;
@@ -68,6 +70,7 @@ final class Device
             new TcpTransport($this->host, $this->port, $this->timeout),
             new Codec,
             $this->commKey,
+            $this->nameEncoding,
         );
         $session->open();
 

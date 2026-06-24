@@ -26,22 +26,25 @@ final class UserEncoder
      */
     public const PACKET_SIZE_ZK6 = 28;
 
-    public static function encode(User $user, int $packetSize = self::PACKET_SIZE_ZK8): string
-    {
+    public static function encode(
+        User $user,
+        int $packetSize = self::PACKET_SIZE_ZK8,
+        string $encoding = NameField::DEFAULT_ENCODING,
+    ): string {
         $password = $user->password ?? '';
         $card = $user->cardNumber !== null ? (int) $user->cardNumber : 0;
 
         return $packetSize === self::PACKET_SIZE_ZK6
-            ? self::encode28($user, $password, $card)
-            : self::encode72($user, $password, $card);
+            ? self::encode28($user, $password, $card, $encoding)
+            : self::encode72($user, $password, $card, $encoding);
     }
 
-    private static function encode28(User $user, string $password, int $card): string
+    private static function encode28(User $user, string $password, int $card, string $encoding): string
     {
         return pack('v', $user->uid)
             .pack('C', $user->privilege->value)
             .str_pad(substr($password, 0, 5), 5, "\0")
-            .str_pad(substr($user->name, 0, 8), 8, "\0")
+            .NameField::pack($user->name, 8, $encoding)
             .pack('V', $card)
             ."\0"                       // reserved pad
             .pack('C', $user->groupId)
@@ -49,12 +52,12 @@ final class UserEncoder
             .pack('V', (int) $user->userId);
     }
 
-    private static function encode72(User $user, string $password, int $card): string
+    private static function encode72(User $user, string $password, int $card, string $encoding): string
     {
         return pack('v', $user->uid)
             .pack('C', $user->privilege->value)
             .str_pad(substr($password, 0, 8), 8, "\0")
-            .str_pad(substr($user->name, 0, 24), 24, "\0")
+            .NameField::pack($user->name, 24, $encoding)
             .pack('V', $card)
             ."\0"                       // reserved pad
             .str_pad(substr((string) $user->groupId, 0, 7), 7, "\0")

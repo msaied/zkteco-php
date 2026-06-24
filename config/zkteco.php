@@ -24,6 +24,12 @@ return [
     | communication password guarding the socket session (0 when unset on the
     | device); it is distinct from any user's own password.
     |
+    | "name_encoding" is the codepage the device stores user names in. The device
+    | reads the raw name bytes using its own configured language, so non-ASCII
+    | names must be encoded to match or they show up as garbage on the panel.
+    | Leave it "UTF-8" for ASCII-only or Unicode firmware; set it to the device's
+    | codepage otherwise — "Windows-1256" for Arabic, "GB2312" for Chinese, etc.
+    |
     */
 
     'connections' => [
@@ -33,6 +39,7 @@ return [
             'comm_key' => (int) env('ZKTECO_COMM_KEY', 0),
             'timeout' => (float) env('ZKTECO_TIMEOUT', 5),
             'udp' => (bool) env('ZKTECO_UDP', false),
+            'name_encoding' => env('ZKTECO_NAME_ENCODING', 'UTF-8'),
         ],
     ],
 

@@ -22,7 +22,7 @@ final class UserDecoder
     /**
      * @return list<User>
      */
-    public static function decode(string $buffer, int $userCount): array
+    public static function decode(string $buffer, int $userCount, string $encoding = NameField::DEFAULT_ENCODING): array
     {
         if ($userCount <= 0 || strlen($buffer) <= 4) {
             return [];
@@ -36,18 +36,18 @@ final class UserDecoder
 
         if ($packetSize === 28) {
             for ($offset = 0; $offset + 28 <= strlen($body); $offset += 28) {
-                $users[] = self::decode28(substr($body, $offset, 28));
+                $users[] = self::decode28(substr($body, $offset, 28), $encoding);
             }
         } else {
             for ($offset = 0; $offset + 72 <= strlen($body); $offset += 72) {
-                $users[] = self::decode72(substr($body, $offset, 72));
+                $users[] = self::decode72(substr($body, $offset, 72), $encoding);
             }
         }
 
         return $users;
     }
 
-    private static function decode28(string $record): User
+    private static function decode28(string $record, string $encoding): User
     {
         /** @var array{uid: int, privilege: int, password: string, name: string, card: int, group: int, userid: int} $f */
         $f = unpack('vuid/Cprivilege/a5password/a8name/Vcard/@21/Cgroup/@24/Vuserid', $record);
@@ -57,7 +57,7 @@ final class UserDecoder
         return new User(
             uid: $f['uid'],
             userId: $userId,
-            name: self::nameOr(trim(Bytes::cutNull($f['name'])), $userId),
+            name: self::nameOr(NameField::unpack($f['name'], $encoding), $userId),
             privilege: Privilege::tryFrom($f['privilege']) ?? Privilege::User,
             password: self::optional(Bytes::cutNull($f['password'])),
             cardNumber: $f['card'] !== 0 ? (string) $f['card'] : null,
@@ -65,7 +65,7 @@ final class UserDecoder
         );
     }
 
-    private static function decode72(string $record): User
+    private static function decode72(string $record, string $encoding): User
     {
         /** @var array{uid: int, privilege: int, password: string, name: string, card: int, group: string, userid: string} $f */
         $f = unpack('vuid/Cprivilege/a8password/a24name/Vcard/@40/a7group/@48/a24userid', $record);
@@ -75,7 +75,7 @@ final class UserDecoder
         return new User(
             uid: $f['uid'],
             userId: $userId,
-            name: self::nameOr(trim(Bytes::cutNull($f['name'])), $userId),
+            name: self::nameOr(NameField::unpack($f['name'], $encoding), $userId),
             privilege: Privilege::tryFrom($f['privilege']) ?? Privilege::User,
             password: self::optional(Bytes::cutNull($f['password'])),
             cardNumber: $f['card'] !== 0 ? (string) $f['card'] : null,

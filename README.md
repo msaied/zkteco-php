@@ -114,8 +114,25 @@ $device = new Device(
     commKey: 0,    // numeric comm password guarding the session (0 if unset)
     timeout: 5.0,  // socket timeout in seconds
     useUdp: false, // UDP is not implemented yet — see Limitations
+    nameEncoding: 'UTF-8', // device name codepage — see "Non-ASCII names" below
 );
 ```
+
+#### Non-ASCII names (Arabic, Chinese, …)
+
+The device stores user names in a fixed byte field and renders them using its
+own configured language codepage, **not** UTF-8. Writing UTF-8 names to a device
+set to another codepage shows mojibake on the panel even though the device can
+display the script. Set `nameEncoding` to the device's codepage so names are
+converted on write and back on read:
+
+```php
+$device = new Device(host: '192.168.1.201', nameEncoding: 'Windows-1256'); // Arabic
+```
+
+Common values: `Windows-1256` (Arabic), `GB2312` (Chinese), `Windows-1251`
+(Cyrillic). Leave it `UTF-8` for ASCII-only or Unicode firmware. Encoding is
+done with `iconv`, so any encoding it supports is valid.
 
 There are two ways to scope a connection:
 
@@ -595,6 +612,7 @@ return [
             'comm_key' => (int) env('ZKTECO_COMM_KEY', 0),
             'timeout'  => (float) env('ZKTECO_TIMEOUT', 5),
             'udp'      => (bool) env('ZKTECO_UDP', false),
+            'name_encoding' => env('ZKTECO_NAME_ENCODING', 'UTF-8'), // device codepage for names
         ],
     ],
 
