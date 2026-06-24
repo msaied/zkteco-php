@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-24
+
 ### Added
 
 - Configurable device name codepage so non-ASCII user names (Arabic, Chinese,
@@ -20,6 +22,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - User names are now truncated to the device field width on whole-character
   boundaries, so a multi-byte character is never split mid-sequence.
+
+## [0.1.2] - 2026-06-24
+
+### Added
+
+- Diagnostic trace hook for the enrollment process.
+
+### Removed
+
+- Outdated ADR documents and implementation plans.
 
 ## [0.1.1] - 2026-06-20
 
@@ -77,6 +89,8 @@ Initial release.
 - The ADMS read path is fully implemented; some outbound ADMS command layouts
   are still provisional (see the README's Limitations section).
 
-[Unreleased]: https://github.com/msaied/zkteco-php/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/msaied/zkteco-php/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/msaied/zkteco-php/compare/v0.1.2...v0.2.0
+[0.1.2]: https://github.com/msaied/zkteco-php/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/msaied/zkteco-php/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/msaied/zkteco-php/releases/tag/v0.1.0
