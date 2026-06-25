@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-06-25
+
+### Fixed
+
+- Non-ASCII user names pushed through the ADMS path now honour the device
+  codepage, matching the socket path. The `USERINFO` `Name=` field is re-encoded
+  (e.g. to Windows-1256 for Arabic firmware) instead of being sent as raw UTF-8,
+  so the panel no longer shows mojibake. In Laravel the codepage is sourced from
+  the default connection's `name_encoding`; a UTF-8 device is left untouched.
+
 ## [0.2.0] - 2026-06-24
 
 ### Added
@@ -89,7 +99,8 @@ Initial release.
 - The ADMS read path is fully implemented; some outbound ADMS command layouts
   are still provisional (see the README's Limitations section).
 
-[Unreleased]: https://github.com/msaied/zkteco-php/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/msaied/zkteco-php/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/msaied/zkteco-php/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/msaied/zkteco-php/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/msaied/zkteco-php/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/msaied/zkteco-php/compare/v0.1.0...v0.1.1

@@ -59,7 +59,7 @@ final class NameField
      */
     private static function fit(string $name, int $width, string $encoding): string
     {
-        $encoded = self::toDevice($name, $encoding);
+        $encoded = self::toCodepage($name, $encoding);
 
         if (strlen($encoded) <= $width) {
             return $encoded;
@@ -73,7 +73,7 @@ final class NameField
         }
 
         for ($count = count($chars) - 1; $count > 0; $count--) {
-            $candidate = self::toDevice(implode('', array_slice($chars, 0, $count)), $encoding);
+            $candidate = self::toCodepage(implode('', array_slice($chars, 0, $count)), $encoding);
 
             if (strlen($candidate) <= $width) {
                 return $candidate;
@@ -85,9 +85,12 @@ final class NameField
 
     /**
      * Convert a UTF-8 name to the device codepage, leaving it untouched when the
-     * device already speaks UTF-8 or the conversion is unavailable.
+     * device already speaks UTF-8 or the conversion is unavailable. This is the
+     * bare re-encoding with no fixed-width padding or truncation — the form the
+     * variable-length ADMS `Name=` text field needs, as opposed to {@see pack()}'s
+     * fixed-width socket field.
      */
-    private static function toDevice(string $name, string $encoding): string
+    public static function toCodepage(string $name, string $encoding): string
     {
         if (self::isUtf8($encoding)) {
             return $name;

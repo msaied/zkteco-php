@@ -25,6 +25,7 @@ use ZkTeco\Laravel\Commands\ApproveDeviceCommand;
 use ZkTeco\Laravel\Commands\ListDevicesCommand;
 use ZkTeco\Laravel\Commands\ListenCommand;
 use ZkTeco\Laravel\Http\PushController;
+use ZkTeco\TCP\Protocol\NameField;
 
 /**
  * Registers the Laravel bridge. Auto-discovered when the package is installed
@@ -91,6 +92,21 @@ final class ZkTecoServiceProvider extends ServiceProvider
      */
     private function registerGenerations(): void
     {
+        // The codepage the panel stores user names in (Windows-1256 for Arabic
+        // firmware). Sourced from the default connection so the ADMS render path
+        // re-encodes `Name=` the same way the socket path does — without it the
+        // device reads raw UTF-8 bytes and shows mojibake.
+        $this->app->when(LegacyGeneration::class)
+            ->needs('$nameEncoding')
+            ->give(function (Application $app): string {
+                $default = $app['config']->get('zkteco.default', 'default');
+
+                return (string) $app['config']->get(
+                    "zkteco.connections.{$default}.name_encoding",
+                    NameField::DEFAULT_ENCODING,
+                );
+            });
+
         $this->app->singleton(LegacyGeneration::class);
         $this->app->singleton(PushSdkGeneration::class);
 

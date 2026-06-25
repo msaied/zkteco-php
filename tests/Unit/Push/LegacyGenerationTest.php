@@ -35,6 +35,7 @@ function legacyGeneration(
     RecordingOperationLogSink $operations = new RecordingOperationLogSink,
     RecordingUserSink $users = new RecordingUserSink,
     RecordingAttendancePhotoSink $photos = new RecordingAttendancePhotoSink,
+    string $nameEncoding = 'UTF-8',
 ): LegacyGeneration {
     return new LegacyGeneration(
         new AttlogParser,
@@ -44,6 +45,7 @@ function legacyGeneration(
         $operations,
         $users,
         $photos,
+        $nameEncoding,
     );
 }
 
@@ -170,6 +172,23 @@ it('renders a user upsert as a USERINFO update', function () {
         ->and($wire)->toContain('Name=Alice')
         ->and($wire)->toContain('Pri=14')
         ->and($wire)->not->toContain('7'); // the device-local uid is not part of the push
+});
+
+it('encodes the user name to the device codepage on a USERINFO upsert', function () {
+    $command = new UpsertUser(new User(uid: 0, userId: '1001', name: 'محمد', privilege: Privilege::User));
+
+    $wire = legacyGeneration(nameEncoding: 'Windows-1256')->renderCommand($command);
+
+    // The name rides the wire as single-byte CP1256, not 2-byte UTF-8, so the
+    // panel reads it through its own codepage without mojibake.
+    expect($wire)->toContain('Name='.hex2bin('e3cde3cf'))
+        ->and($wire)->not->toContain('Name=محمد');
+});
+
+it('leaves the user name as UTF-8 when no device codepage is configured', function () {
+    $command = new UpsertUser(new User(uid: 0, userId: '1001', name: 'محمد', privilege: Privilege::User));
+
+    expect(legacyGeneration()->renderCommand($command))->toContain('Name=محمد');
 });
 
 it('renders a template push to the legacy FINGERTMP table', function () {

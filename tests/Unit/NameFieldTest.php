@@ -18,6 +18,17 @@ it('re-encodes an Arabic name to the device codepage on the way out', function (
         ->and(strlen($packed))->toBe(24);
 });
 
+it('re-encodes a name to the codepage with no padding or truncation', function () {
+    // The variable-length ADMS text field uses this rather than pack(): same
+    // CP1256 bytes, but no fixed-width NUL padding.
+    expect(bin2hex(NameField::toCodepage('محمد', 'Windows-1256')))->toBe('e3cde3cf')
+        ->and(NameField::toCodepage('Alice', 'Windows-1256'))->toBe('Alice');
+});
+
+it('leaves a name untouched when the codepage is UTF-8', function () {
+    expect(NameField::toCodepage('محمد', 'UTF-8'))->toBe('محمد');
+});
+
 it('round-trips a non-ASCII name through pack then unpack', function () {
     $name = 'محمد علي';
 

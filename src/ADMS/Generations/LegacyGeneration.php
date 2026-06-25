@@ -29,6 +29,7 @@ use ZkTeco\ADMS\Parsing\OperlogParser;
 use ZkTeco\ADMS\Registry\RegisteredDevice;
 use ZkTeco\ADMS\UserSink;
 use ZkTeco\Exceptions\CommandException;
+use ZkTeco\TCP\Protocol\NameField;
 use ZkTeco\Values\BiometricTemplate;
 use ZkTeco\Values\User;
 
@@ -51,6 +52,7 @@ final class LegacyGeneration implements Generation
         private OperationLogSink $operationLogSink,
         private UserSink $userSink,
         private AttendancePhotoSink $attendancePhotoSink,
+        private string $nameEncoding = NameField::DEFAULT_ENCODING,
     ) {}
 
     public function ingest(string $table, PushRequest $request, string $serialNumber): IngestOutcome
@@ -173,12 +175,17 @@ final class LegacyGeneration implements Generation
     /**
      * The `USERINFO` upsert form, shared by both generations. Keyed by the PIN;
      * the device-local `uid` slot is irrelevant to a push and omitted.
+     *
+     * The name is re-encoded to the device's codepage ({@see $nameEncoding}, e.g.
+     * Windows-1256 for Arabic firmware) for the same reason the socket path does
+     * it in {@see NameField}: the panel reads these bytes through its own codepage,
+     * so a raw UTF-8 name renders as mojibake. A UTF-8 device leaves it untouched.
      */
     private function renderUserInfo(User $user): string
     {
         $fields = [
             'PIN='.$user->userId,
-            'Name='.$user->name,
+            'Name='.NameField::toCodepage($user->name, $this->nameEncoding),
             'Pri='.$user->privilege->value,
             'Passwd='.($user->password ?? ''),
             'Card='.($user->cardNumber ?? ''),
