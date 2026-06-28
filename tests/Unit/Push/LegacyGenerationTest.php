@@ -36,6 +36,7 @@ function legacyGeneration(
     RecordingUserSink $users = new RecordingUserSink,
     RecordingAttendancePhotoSink $photos = new RecordingAttendancePhotoSink,
     string $nameEncoding = 'UTF-8',
+    ?int $timezoneOffsetMinutes = null,
 ): LegacyGeneration {
     return new LegacyGeneration(
         new AttlogParser,
@@ -46,6 +47,7 @@ function legacyGeneration(
         $users,
         $photos,
         $nameEncoding,
+        $timezoneOffsetMinutes,
     );
 }
 
@@ -144,7 +146,20 @@ it('builds the GET OPTION FROM config block from the device stamps', function ()
 
     expect($block)->toContain('GET OPTION FROM: SN1')
         ->and($block)->toContain('Stamp=123')
-        ->and($block)->toContain('Realtime=1');
+        ->and($block)->toContain('Realtime=1')
+        ->and($block)->not->toContain('TimeZone=');
+});
+
+it('emits the configured timezone offset as TimeZone in the config block', function () {
+    $device = new RegisteredDevice(
+        serialNumber: 'SN1',
+        generation: ProtocolGeneration::Legacy,
+        capabilities: new Capabilities,
+    );
+
+    $block = legacyGeneration(timezoneOffsetMinutes: 300)->configBlock($device);
+
+    expect($block)->toContain('TimeZone=300');
 });
 
 it('renders reboot and restart to the single ADMS reboot verb', function () {

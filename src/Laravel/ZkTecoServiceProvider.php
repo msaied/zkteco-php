@@ -107,6 +107,14 @@ final class ZkTecoServiceProvider extends ServiceProvider
                 );
             });
 
+        // The device clock offset east of UTC, in minutes, the ADMS handshake
+        // tells the device via `TimeZone=`. Null (the default) omits the line and
+        // leaves the device on its own clock; set it for an ADMS-managed fleet
+        // that would otherwise drift to the response's GMT `Date` header.
+        $this->app->when(LegacyGeneration::class)
+            ->needs('$timezoneOffsetMinutes')
+            ->give(fn (Application $app): ?int => $app['config']->get('zkteco.adms.timezone_offset_minutes'));
+
         $this->app->singleton(LegacyGeneration::class);
         $this->app->singleton(PushSdkGeneration::class);
 

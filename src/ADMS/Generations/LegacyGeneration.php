@@ -53,6 +53,7 @@ final class LegacyGeneration implements Generation
         private UserSink $userSink,
         private AttendancePhotoSink $attendancePhotoSink,
         private string $nameEncoding = NameField::DEFAULT_ENCODING,
+        private ?int $timezoneOffsetMinutes = null,
     ) {}
 
     public function ingest(string $table, PushRequest $request, string $serialNumber): IngestOutcome
@@ -115,13 +116,19 @@ final class LegacyGeneration implements Generation
      * and provisional pending a capture (see docs/adr/0005); these are the
      * widely-supported defaults, with `Realtime=1` so attendance is pushed as it
      * happens.
+     *
+     * `TimeZone` (minutes east of UTC) is appended only when a timezone offset is
+     * configured. An ADMS-managed device takes its wall clock from the server, so
+     * a deployment that must not let the device run on the response's GMT `Date`
+     * header sets this; left unset, the line is omitted and the device keeps its
+     * own clock — preserving the pre-existing handshake for unconfigured apps.
      */
     public function configBlock(RegisteredDevice $device): string
     {
         $attlog = $device->stampFor('ATTLOG')?->value ?? '0';
         $operlog = $device->stampFor('OPERLOG')?->value ?? '0';
 
-        return implode("\n", [
+        $lines = [
             'GET OPTION FROM: '.$device->serialNumber,
             'Stamp='.$attlog,
             'OpStamp='.$operlog,
@@ -132,7 +139,13 @@ final class LegacyGeneration implements Generation
             'TransFlag=1111111111',
             'Realtime=1',
             'Encrypt=0',
-        ])."\n";
+        ];
+
+        if ($this->timezoneOffsetMinutes !== null) {
+            $lines[] = 'TimeZone='.$this->timezoneOffsetMinutes;
+        }
+
+        return implode("\n", $lines)."\n";
     }
 
     /**

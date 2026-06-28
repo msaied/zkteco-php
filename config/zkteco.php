@@ -77,5 +77,13 @@ return [
         'allowed_serials' => array_values(array_filter(
             explode(',', (string) env('ZKTECO_ADMS_ALLOWED_SERIALS', '')),
         )),
+
+        // Device clock offset east of UTC, in minutes (e.g. 180 = UTC+3), sent to
+        // the device as `TimeZone=` in the handshake so an ADMS-managed device
+        // keeps the right wall clock instead of drifting to the response's GMT
+        // `Date` header. Leave null (the default) to omit the line entirely and
+        // preserve the device's own timezone — the safe default for firmware you
+        // have not profiled.
+        'timezone_offset_minutes' => ($tz = env('ZKTECO_ADMS_TIMEZONE_OFFSET_MINUTES')) === null ? null : (int) $tz,
     ],
 ];
